@@ -1,9 +1,9 @@
 module.exports = {
-    response: (status, massage, data) => {
+    response: (status, message, data) => {
         if(data) {
             return {
                 status: status,
-                message: massage,
+                message: message,
                 data: data,
             };
         } else {

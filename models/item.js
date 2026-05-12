@@ -18,7 +18,13 @@ module.exports = (sequelize, DataTypes) => {
   Item.init({
     name: DataTypes.STRING,
     stock: DataTypes.INTEGER,
-    image: DataTypes.STRING
+    image: {
+      type:DataTypes.STRING,
+      get() {
+        let imageName = this.getDataValue('image');
+        return `http://localhost:3000/uploads/${imageName}`;
+      }
+    }
   }, {
     sequelize,
     modelName: 'Item',
