@@ -10,7 +10,7 @@ db.sequelize.authenticate()
 
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
-app.use('/item', itemRouter);
+app.use('/items', itemRouter);
 
 app.get('/', (req, res) => {
     res.send('dANI!')
