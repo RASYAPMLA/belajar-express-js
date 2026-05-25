@@ -1,6 +1,6 @@
 const Validator = require("fastest-validator");
 const v = new Validator();
-const { Item, Loan } = require('../models');
+const { Item, Loan, Return } = require('../models');
 const { response } = require("../helpers/response.formater");
 const { where } = require("sequelize");
 const { get } = require("../routes/item.routes");
@@ -41,19 +41,82 @@ module.exports = {
             const updateStock = await Item.update({
                 stock: item.stock - data.total_item
             }, {
-                where:{id:data.item_id}
+                where: { id: data.item_id }
             });
             return res.status(201).json(response(201, "success create loan", createData));
         } catch (error) {
             return res.status(500).json(response(500, "server error", error.message))
         }
     },
-    getLoans: async (req,res) => {
+    getLoans: async (req, res) => {
         try {
-            const loans = await Loan.findAll({include:Item});
-            return res.status(200).json(response(200,"succes",loans));
-        }catch (error) {
-            return res.status(500).json(response(500,"server error",error.message))
+            const page = Number(req.query.page) || 1;
+            const limit = Number(req.query.limit) || 20;
+            //offset
+            const offset = (page - 1) * limit;
+            const { count, rows } = await Loan.findAndCountAll({
+                include: Item,
+                offset: offset,
+                limit: limit
+            });
+            const formatPagination = {
+                data: rows,
+                limit: limit,
+                rangeData: (offset + 1) + "-" + (offset + rows.length),
+
+                currentPage: page,
+                totalPage: Math.round(count / limit),
+                total: count,
+            }
+            return res.status(200).json(response(200, "succes", formatPagination));
+        } catch (error) {
+            return res.status(500).json(response(500, "server error", error.message))
+        }
+    },
+    
+        createReturn: async (req, res) => {
+        try {
+            const { loan_id, total_item, notes, date } = req.body;
+            const schema = {
+                loan_id: { type: "number", positive: true, integer: true },
+                total_item: { type: "number", positive: true, integer: true },
+                notes: { type: "string" },
+                date: { type: "date" },
+            }
+            const data = {
+                loan_id:Number(loan_id),
+                total_item:Number(total_item),
+                notes:notes ?? "-",
+                date:new Date(date),
+            }
+            const validate = v.validate(data, schema);
+            if (validate.length > 0) {
+                return res.status(400).json(response(400, "validate Error", validate));
+            }
+            const loanData = await Loan.findByPk(loan_id);
+            if (!loanData) {
+                return res.status(400).json(response(400, "validasi error", 'loan not found'));
+            }
+            if (data.total_item > loanData.total_item) {
+                return res.status(400).json(response(400, "validasi error", "total item return more than loan"));
+            }
+
+            const itemData = await Item.findByPk(loanData.item_id);
+            const createReturn = await Return.create({
+                loan_id: data.loan_id,
+                total_item: data.total_item,
+                notes: data.notes,
+                date: data.date,
+            });
+            const updateStock = await Item.update({
+                stock: itemData.stock + data.total_item
+            }, {
+                where: { id: itemData.id }
+            });
+            return res.status(201).json(response(201, "created", createReturn))
+        } catch (error) {
+            return res.status(500).json(response(500, "server error", error.message))
         }
     }
+
 }
