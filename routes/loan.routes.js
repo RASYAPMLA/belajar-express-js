@@ -5,6 +5,7 @@ const loanController = require('../controllers/loan.controller')
 const upload = require('../middlewares/upload')
 const { route } = require('./item.routes')
 
+router.get('/',loanController.getLoans   )
 router.post('/',upload.none(),loanController.createLoan)
 router.get('/',loanController.getLoans)
 router.post('/return',upload.none(),loanController.createReturn)

@@ -65,7 +65,7 @@ module.exports = {
                 rangeData: (offset + 1) + "-" + (offset + rows.length),
 
                 currentPage: page,
-                totalPage: Math.round(count / limit),
+                totalPage: Math.ceil(count / limit),
                 total: count,
             }
             return res.status(200).json(response(200, "succes", formatPagination));
